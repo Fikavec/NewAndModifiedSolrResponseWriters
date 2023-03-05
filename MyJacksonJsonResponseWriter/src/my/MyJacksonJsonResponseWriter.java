@@ -14,23 +14,27 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.response;
+package my;
 
 import java.io.IOException;
 import java.io.OutputStream;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 
-import com.fasterxml.jackson.dataformat.smile.SmileFactory;
-import com.fasterxml.jackson.dataformat.smile.SmileGenerator;
+import com.fasterxml.jackson.core.JsonEncoding;
+import com.fasterxml.jackson.core.JsonFactory;
+import com.fasterxml.jackson.core.JsonGenerator;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.response.BinaryResponseWriter;
+import org.apache.solr.response.JSONWriter;
+import org.apache.solr.response.SolrQueryResponse;
 
-public class SmileResponseWriter extends BinaryResponseWriter {
+public class MyJacksonJsonResponseWriter extends BinaryResponseWriter {
 
   @Override
   public void write(OutputStream out, SolrQueryRequest request, SolrQueryResponse response) throws IOException {
-    try (SmileWriter sw = new SmileWriter(out, request, response)) {
+    try (MyJacksonJsonWriter sw = new MyJacksonJsonWriter(out, request, response)) {
       sw.writeResponse();
     }
   }
@@ -39,25 +43,29 @@ public class SmileResponseWriter extends BinaryResponseWriter {
   public void init(@SuppressWarnings({"rawtypes"})NamedList args) {
 
   }
-  //smile format is an equivalent of JSON format . So we extend JSONWriter and override the relevant methods
+  
+  @Override
+  public String getContentType(SolrQueryRequest request, SolrQueryResponse response) {
+    return "application/json; charset=UTF-8";
+  }
+  //So we extend JSONWriter and override the relevant methods
 
-  public static class SmileWriter extends JSONWriter {
-    protected final SmileGenerator gen;
+  public static class MyJacksonJsonWriter extends JSONWriter {
+    protected final JsonGenerator gen;
     protected final OutputStream out;
 
-    public SmileWriter(OutputStream out, SolrQueryRequest req, SolrQueryResponse rsp) {
+    public MyJacksonJsonWriter(OutputStream out, SolrQueryRequest req, SolrQueryResponse rsp) {
       super(null, req, rsp);
       this.out = out;
-      SmileFactory smileFactory = new SmileFactory();
-      smileFactory.enable(SmileGenerator.Feature.CHECK_SHARED_NAMES);
+      JsonFactory JsonFactory = new JsonFactory();
       try {
-        gen = smileFactory.createGenerator(this.out, null);
+        gen = JsonFactory.createGenerator(this.out, JsonEncoding.UTF8);
       } catch (IOException e) {
         throw new RuntimeException(e);
       }
     }
 
-
+    
     @Override
     public void writeResponse() throws IOException {
       super.writeNamedList(null, rsp.getValues());
